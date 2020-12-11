@@ -14,7 +14,7 @@ Each timeseries should be checked thrice by engineers.
 
 | overview |  |
 | ------ | ------ |
-| tool | SparcChecks |
+| tool | SparcChecks [status]|
 | script | checker.R |
 | link | http://sparcwiki.awi-potsdam.de/doku.php?id=observatory:data:check |
 | tool | SparcFlags(rs) [check 1 & 2]|
