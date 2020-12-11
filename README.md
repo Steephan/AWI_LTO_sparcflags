@@ -2,6 +2,7 @@
 
 Manual flag 6 for certain values ​​that cannot be found by any routine, but should be excluded from the knowledge of the engineers.
 
+| ------ | ------ |
 | tool | SparcFlags(rs) |
 | script | flagger.R |
 | link | http://sparcwiki.awi-potsdam.de/doku.php?id=database:flagger |
@@ -10,6 +11,8 @@ Manual flag 6 for certain values ​​that cannot be found by any routine, but 
 
 Each timeseries should be checked thrice by engineers.
 
+| header | header |
+| ------ | ------ |
 | tool | SparcChecks |
 | script | checker.R |
 | link | http://sparcwiki.awi-potsdam.de/doku.php?id=observatory:data:check |
