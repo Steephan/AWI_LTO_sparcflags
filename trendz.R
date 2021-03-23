@@ -15,7 +15,7 @@
 ##
 ##   written by:  stephan.lange@awi.de
 ##                christian.lehr@awi.de
-##   last modified: 2019-11-18
+##   last modified: 2021-03-23
 ##
 ##   last check: 2020-01-27
 ##   checked by: christian.lehr@awi.de
@@ -29,6 +29,7 @@
 #############################################################################
 ##
 ## last modification:
+## 2021-03-23 SL: change pathes to git structure
 ## 2020-06-24 CL: mean value of selection of data added as horizontal line to the boxplots panel
 ##
 ###############################################################################
@@ -49,25 +50,23 @@ running.system <- 1
 
 ## read paths and allowed variables
 if (running.system == 1) {
-  yearlyDatasetPaths <- read.csv("N:/sparc/LTO/R_database/flagger_sa/yearlyDataPath_auto_noflag.csv",
+  yearlyDatasetPaths <- read.csv("N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings_shiny/yearlyDataPath_auto_noflag.csv",
                    stringsAsFactors = FALSE, strip.white = TRUE)
-  allowedVariables   <- read.csv("N:/sparc/LTO/R_database/flagger_sa/allowedVariables.csv",
+  allowedVariables   <- read.csv("N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings_shiny/allowedVariables.csv",
                    stringsAsFactors = FALSE, strip.white = TRUE)
-  db.path      <- "N:/sparc/LTO/R_database/database_R/Sa_02_Lvl0_Lvl1/"
-  filterbasepath   <- "N:/sparc/data/LTO/level1/Filter/"
-  checkbasepath    <- "N:/sparc/data/LTO/level1/Check/"
+  filterbasepath     <- "N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/filter.files/"
+  checkbasepath      <- "N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/check.files/"
   # read file for modification of style of shiny-app
-  source("N:/sparc/LTO/R_database/flagger_sa/appCSS.R")
+  source("N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/additionals_shiny/appCSS.R")
 } else if (running.system == 2) {
-  yearlyDatasetPaths <- read.csv("/sparc/LTO/R_database/flagger_sa/yearlyDataPath_AWI_noflag.csv", stringsAsFactors = FALSE,
+  yearlyDatasetPaths <- read.csv("/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings_shiny/yearlyDataPath_AWI_noflag.csv", stringsAsFactors = FALSE,
                    strip.white = TRUE)
-  allowedVariables <- read.csv("/sparc/LTO/R_database/flagger_sa/allowedVariables.csv", stringsAsFactors = FALSE,
+  allowedVariables <- read.csv("/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings_shiny/allowedVariables.csv", stringsAsFactors = FALSE,
                  strip.white = TRUE)
-  db.path      <- "/sparc/LTO/R_database/database_R/Sa_02_Lvl0_Lvl1/"
-  filterbasepath   <- "/sparc/data/LTO/level1/Filter/"
-  checkbasepath    <- "/sparc/data/LTO/level1/Check/"
+  filterbasepath     <- "/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/filter.files/"
+  checkbasepath      <- "/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/check.files/"
   # read file for modification of style of shiny-app
-  source("/sparc/LTO/R_database/flagger_sa/appCSS.R")
+  source("/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/additionals_shiny/appCSS.R")
 }
 
 

@@ -25,7 +25,8 @@
 #############################################################################
 ##
 ## last modification:
-## 2020-09-14 CL change of wording: "created" ==> "flagging_date", "creator" ==> "flagged_by"
+## 2021-03-23, SL: new pathes to git structure
+## 2020-09-14, CL: change of wording: "created" ==> "flagging_date", "creator" ==> "flagged_by"
 ## 2020-03-20, CL:  - format date columns to the default date format "UTC" for correct match of dates read from the filter (flag 6) tables and the date format of the plots
 ##                  - Selection of filter data points (flag 6) changed from "<" and ">" to "<=" and ">="
 ## 2020-04-06, CL:  - Button Delete filters ==> replacement of index of variable ==> which(filterlist$variable == input$variable)
@@ -57,42 +58,37 @@ running.system <- 1
 
 ## read paths and allowed variables
 if (running.system == 1) {
-  yearlyDatasetPaths <- read.csv("N:/sparc/LTO/R_database/flagger_sa/yearlyDataPath_auto.csv",
+  yearlyDatasetPaths <- read.csv("N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings_shiny/yearlyDataPath_auto.csv",
                                  stringsAsFactors = FALSE, strip.white = TRUE)
-  allowedVariables   <- read.csv("N:/sparc/LTO/R_database/flagger_sa/allowedVariables.csv",
+  allowedVariables   <- read.csv("N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings_shiny/allowedVariables.csv",
                                  stringsAsFactors = FALSE, strip.white = TRUE)
-  db.path            <- "N:/sparc/LTO/R_database/database_R/Sa_02_Lvl0_Lvl1/"
-  filterbasepath     <- "N:/sparc/data/LTO/level1/Filter/"
-  checkbasepath      <- "N:/sparc/data/LTO/level1/Check/"
+  #db.path            <- "N:/sparc/LTO/R_database/database_R/Sa_02_Lvl0_Lvl1/"
+  filterbasepath     <- "N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/filter.files/"
+  checkbasepath      <- "N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/check.files/"
   # maintenance period Bayelva
-  maint <- read.table("N:/sparc/LTO/R_database/database_R/settings/maintance.txt", sep = "\t", header = T)
+  maint <- read.table("N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/maintenance.files/maintance.txt", sep = "\t", header = T)
   # maintenance period Samoylov
-  maint_sa <- read.table("N:/sparc/LTO/R_database/database_R/settings/sa_maintance.txt", sep = "\t", header = T)
+  maint_sa <- read.table("N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/maintenance.files/sa_maintance.txt", sep = "\t", header = T)
   # read file for modification of style of shiny-app
-  source("N:/sparc/LTO/R_database/flagger_sa/appCSS.R")
-  # read file for help functions ==> e.g. to plot the maintenance period
- # source("N:/sparc/LTO/R_database/database_R/settings/db_func.R")
+  source("N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/additionals_shiny/appCSS.R")
 } else if (running.system == 2) {
-  yearlyDatasetPaths <- read.csv("/sparc/LTO/R_database/flagger_sa/yearlyDataPath_AWI.csv", stringsAsFactors = FALSE,
+  yearlyDatasetPaths <- read.csv("/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings_shiny/yearlyDataPath_AWI.csv", stringsAsFactors = FALSE,
                                  strip.white = TRUE)
-  allowedVariables <- read.csv("/sparc/LTO/R_database/flagger_sa/allowedVariables.csv", stringsAsFactors = FALSE,
+  allowedVariables <- read.csv("/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings_shiny/allowedVariables.csv", stringsAsFactors = FALSE,
                                strip.white = TRUE)
-  db.path            <- "/sparc/LTO/R_database/database_R/Sa_02_Lvl0_Lvl1/"
-  filterbasepath     <- "/sparc/data/LTO/level1/Filter/"
-  checkbasepath      <- "/sparc/data/LTO/level1/Check/"
+  #db.path            <- "/sparc/LTO/R_database/database_R/Sa_02_Lvl0_Lvl1/"
+  filterbasepath     <- "/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/filter.files/"
+  checkbasepath      <- "/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/check.files/"
   # maintenance period Bayelva
-  maint <- read.table("/sparc/LTO/R_database/database_R/settings/maintance.txt", sep = "\t", header = T)
+  maint <- read.table("/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/maintenance.files/maintance.txt", sep = "\t", header = T)
   # maintenance period Samoylov
-  maint_sa <- read.table("/sparc/LTO/R_database/database_R/settings/sa_maintance.txt", sep = "\t", header = T)
+  maint_sa <- read.table("/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/maintenance.files/sa_maintance.txt", sep = "\t", header = T)
   # read file for modification of style of shiny-app
-  source("/sparc/LTO/R_database/flagger_sa/appCSS.R")
-  # read file for help functions ==> e.g. to plot the maintenance period
- # source("/sparc/LTO/R_database/database_R/settings/db_func.R")
+  source("/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/additionals_shiny/appCSS.R")
 }
 
 # color ramp for flags
 flagcolors <- rainbow(20)
-#flagcolors[1:8] <- "darkorchid4"
 flagcolors[2] <- "#AC1116"
 flagcolors[3] <- "#9346A4"
 flagcolors[4] <- "#71D7DA"
@@ -112,7 +108,7 @@ origin <- "1970-01-01 00:00:00"
 ###############################
 #### helper functions for busy/error button feedbacks
 #
-# © https://github.com/daattali/advanced-shiny/tree/master/busy-indicator
+# https://github.com/daattali/advanced-shiny/tree/master/busy-indicator
 #
 # Set up a button to have an animated loading indicator and a checkmark
 # for better user experience
@@ -1028,17 +1024,15 @@ server <- shinyServer(function(input, output, session) {
     #print(datasetname)
     if (running.system == 1) {
       ## source update script
-      p.1 <<- read.table("N:/sparc/LTO/R_database/database_R/settings/path_windoof.txt", sep = "\t", header = T)
-      #p.1maint <<- read.table("N:/sparc/LTO/R_database/database_R/settings/maintance.txt",sep = "\t", header = T)
-      source("N:/sparc/LTO/R_database/database_R/settings/db_func.R")
+      p.1 <<- read.table("N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/path_win.txt", sep = "\t", header = T)
+      source("N:/sparc/LTO/R_database//Time_series_preprocessing/required-scripts-and-files/functions/db_func.R")
       aktuell <<- input$year
       station <<- datasetname
       var.name <<- paste0(input$variable, "_fl")
       try(source(paste0(with(yearlyDatasetPaths, db.path[(dataset == datasetname) & (year == input$year)]))))
     } else if (running.system %in% c(2, 3, 4)) {#momentan nur 2
-      p.1 <<- read.table("/sparc/LTO/R_database/database_R/settings/path_linux.txt", sep = "\t", header = T)
-      #p.1maint <<- read.table("/sparc/LTO/R_database/database_R/settings/maintance.txt",sep = "\t", header = T)
-      source("/sparc/LTO/R_database/database_R/settings/db_func.R")
+      p.1 <<- read.table("/sparc/LTO/R_database//Time_series_preprocessing/required-scripts-and-files/settings/path_linux.txt", sep = "\t", header = T)
+      source("/sparc/LTO/R_database//Time_series_preprocessing/required-scripts-and-files/functions/db_func.R")
       aktuell <<- input$year
       station <<- datasetname
       var.name <<- paste0(input$variable, "_fl")
@@ -1083,12 +1077,12 @@ ui <- shinyUI(
                     choices = sort(unique(yearlyDatasetPaths$station))),
 
         selectInput("year", NULL, #"Year:", #"Choose a year:",
-                    selected = 2019,
+                    selected = 2020,
                     choices = sort(unique(yearlyDatasetPaths$year))),
 
         selectInput("dataset", NULL, #"Dataset:", #"Choose a dataset:",
                     selected = "BaMet2009",
-                    choices = yearlyDatasetPaths$dataset[(yearlyDatasetPaths$year == 2019) &
+                    choices = yearlyDatasetPaths$dataset[(yearlyDatasetPaths$year == 2020) &
                                                            (yearlyDatasetPaths$station == "Bayelva")]),
 
         selectInput("variable", NULL, #"Choose a variable:",
@@ -1123,8 +1117,6 @@ ui <- shinyUI(
         ),
 
         tags$hr(),
-
-   #     p(strong("Check:"),"Confirm plausibility of the selected time series"),
 
       #withBusyIndicatorUI(
         actionButton("buttonSaveCheck", "Check",
