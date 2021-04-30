@@ -62,6 +62,8 @@ if (running.system == 1) {
                                  stringsAsFactors = FALSE, strip.white = TRUE)
   allowedVariables   <- read.csv("N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings_shiny/allowedVariables.csv",
                                  stringsAsFactors = FALSE, strip.white = TRUE)
+  allowedcompVariables   <- read.csv("N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings_shiny/allowedcompVariables.csv",
+                                 stringsAsFactors = FALSE, strip.white = TRUE)
   #db.path            <- "N:/sparc/LTO/R_database/database_R/Sa_02_Lvl0_Lvl1/"
   filterbasepath     <- "N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/filter.files/"
   checkbasepath      <- "N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/check.files/"
@@ -207,7 +209,7 @@ server <- shinyServer(function(input, output, session) {
         ylim = c(-2000, 2000)
       }
       # set plot margins
-      par(mar = c(4, 3, 1, 1))
+      par(mar = c(4, 3, 1, 3))
       plot(x = flaggedData$UTC, y = flaggedData[, variablename], xlab = "", ylab = "",
            ylim = ylim, type = "n", xaxt = "n")
       # draw x-axis
@@ -239,13 +241,29 @@ server <- shinyServer(function(input, output, session) {
       # draw y-axis grid
       grid(nx = NA, ny = NULL)
       #browser()
-      # plot comparison data if present
       if (nrow(comparisonData) > 0) {
-        legend("topleft", paste("comparison:", input$comparisonVariable,
-                                input$comparisonDataset, input$comparisonYear),
-               lty = 1, col = "lightskyblue")
-        lines(x = comparisonData$UTC, y = comparisonData$value, col = "lightskyblue")
-      }
+        if(input$comparisonrange == TRUE){
+          legend("topleft", paste("comparison:", input$comparisonVariable,
+                                  input$comparisonDataset, input$comparisonYear),
+                 lty = 1, col = "lightskyblue")
+          lines(x = comparisonData$UTC, y = comparisonData$value, col = "lightskyblue")
+          pos.comp.axis<-c(range(comparisonData$value),round(mean(comparisonData$value),2),range(comparisonData$value))
+          axis(4,at=pos.comp.axis,labels=pos.comp.axis,col="lightskyblue",col.axis="lightskyblue")
+          #browser()
+        }else if(input$comparisonrange == FALSE){
+          legend("topleft", paste("comparison:", input$comparisonVariable,
+                                  input$comparisonDataset, input$comparisonYear),
+                 lty = 1, col = "lightskyblue")
+          comparisonData$valuez <- comparisonData$value-mean(range(comparisonData$value))
+          comp.ratio <- diff(datarange)/diff(range(comparisonData$value))
+          pos.comp.axis <- c(range(comparisonData$valuez)[1]*comp.ratio,round(mean(comparisonData$valuez),2),range(comparisonData$valuez)[2]*comp.ratio)
+          lab.comp.axis <- c(range(comparisonData$value)[1],round(mean(comparisonData$value),2),range(comparisonData$value)[2])
+          lines(x = comparisonData$UTC, y = comp.ratio*(comparisonData$value-mean(range(comparisonData$value))), col = "lightskyblue")
+          axis(4,at=pos.comp.axis,labels=lab.comp.axis,col="lightskyblue",col.axis="lightskyblue")
+          
+          #browser()
+     }}
+      
       # plot regular values
       points(x = flaggedData.noflag$UTC, y = flaggedData.noflag[, variablename],
              type = "p", pch = ".", cex = 0.2)
@@ -297,7 +315,6 @@ server <- shinyServer(function(input, output, session) {
           }
         }
       }
-
     })
   }
 
@@ -314,9 +331,13 @@ server <- shinyServer(function(input, output, session) {
       # Extract flagged data
       flaggedData.noflag <- flaggedData[flaggedData[, flagname] == 0, ]
       flaggedData.flag <- flaggedData[flaggedData[, flagname] != 0, ]
+      
+      datarange <- range(flaggedData[(flaggedData[, flagname] != 2) &
+                                       (flaggedData[, flagname] != 4), variablename], na.rm = T)
       # set plot margins
-      par(mar = c(4, 3, 1, 1))
+      par(mar = c(4, 3, 1, 3))
       # plot
+     
       plot(x = flaggedData.noflag$UTC,
            y = flaggedData.noflag[, variablename],
            type = "p", pch = 20, cex = .4, xlab = "date", ylab = "", xaxt = "n",
@@ -355,11 +376,28 @@ server <- shinyServer(function(input, output, session) {
 
       # plot comparison data if present
       if (nrow(comparisonData) > 0) {
-        legend("topleft", paste("comparison:", input$comparisonVariable,
-                                input$comparisonDataset, input$comparisonYear),
-               lty = 1, col = "lightskyblue")
-        lines(x = comparisonData$UTC, y = comparisonData$value, col = "lightskyblue")
-      }
+        if(input$comparisonrange == TRUE){
+          legend("topleft", paste("comparison:", input$comparisonVariable,
+                                  input$comparisonDataset, input$comparisonYear),
+                 lty = 1, col = "lightskyblue")
+          lines(x = comparisonData$UTC, y = comparisonData$value, col = "lightskyblue")
+          pos.comp.axis<-c(range(comparisonData$value),round(mean(comparisonData$value),2),range(comparisonData$value))
+          axis(4,at=pos.comp.axis,labels=pos.comp.axis,col="lightskyblue",col.axis="lightskyblue")
+          #browser()
+        }else if(input$comparisonrange == FALSE){
+          legend("topleft", paste("comparison:", input$comparisonVariable,
+                                  input$comparisonDataset, input$comparisonYear),
+                 lty = 1, col = "lightskyblue")
+          comparisonData$valuez <- comparisonData$value-mean(range(comparisonData$value))
+          comp.ratio <- diff(datarange)/diff(range(comparisonData$value))
+          pos.comp.axis <- c(range(comparisonData$valuez)[1]*comp.ratio,round(mean(comparisonData$valuez),2),range(comparisonData$valuez)[2]*comp.ratio)
+          lab.comp.axis <- c(range(comparisonData$value)[1],round(mean(comparisonData$value),2),range(comparisonData$value)[2])
+          lines(x = comparisonData$UTC, y = comp.ratio*(comparisonData$value-mean(range(comparisonData$value))), col = "lightskyblue")
+          axis(4,at=pos.comp.axis,labels=lab.comp.axis,col="lightskyblue",col.axis="lightskyblue")
+          
+          #browser()
+        }}
+      
 
       # add flagged points
       for (flag in unique(flaggedData.flag[, flagname])) {
@@ -909,12 +947,12 @@ server <- shinyServer(function(input, output, session) {
       selectInput("comparisonDataset", "Choose a dataset:", choices = input$dataset),
 
       selectInput("comparisonVariable", "Choose a variable:", choices = NULL),
-
+      checkboxInput("comparisonrange", "Same Axis", TRUE),
       footer = tagList(
         modalButton("Cancel"),
         actionButton("OKcomparisonModal", "Add comparison data")
       ),
-      title = "Add comparison data",
+      title = "Add comparison data (lv0)",
       easyClose = TRUE,
       size = "s"
     )
@@ -936,6 +974,9 @@ server <- shinyServer(function(input, output, session) {
       ## Get data and redraw overviewplot
       path <- yearlyDatasetPaths$path[(yearlyDatasetPaths$dataset == input$comparisonDataset) &
                                       (yearlyDatasetPaths$year == input$comparisonYear)]
+      path<-gsub("LTO/level1", "LTO/level0", path)
+      path<-gsub("lv1.dat", "lv0.dat", path)
+      #browser()
       # path will be empty if dataset changed and input$variable did not update
       if (length(path) == 0) return()
       # get names of selected variable and associated flag
@@ -948,13 +989,14 @@ server <- shinyServer(function(input, output, session) {
       comparisonData$UTC <<- as.POSIXlt(comparisonData$UTC, origin = origin, tz = 'UTC')
       ## change year of comparison data to that of currently selected one
       comparisonData$UTC$year <<- rep(as.integer(input$year) - 1900, nrow(comparisonData))
-      comparisonData <<- comparisonData[, c("UTC", variablename, flagname)]
+      #comparisonData <<- comparisonData[, c("UTC", variablename, flagname)]
+      comparisonData <<- comparisonData[, c("UTC", variablename)]
       comparisonData <<- reshape(comparisonData, direction = "long",
                                  idvar = "UTC",
-                                 varying = list(variablename, flagname),
+                                 varying = list(variablename),#list(variablename, flagname),
                                  timevar = "variable",
                                  times = variablename,
-                                 v.names = c("value", "flag"))
+                                 v.names = c("value"))
       # remove short streaks of NA (< 12) in order to plot lines properly
       r <- rle(is.na(comparisonData$value)) # run length encoding
       comparisonData <<- comparisonData[!rep(r$values & r$lengths < 12, r$lengths), ]
@@ -992,7 +1034,7 @@ server <- shinyServer(function(input, output, session) {
                       }
 
                       # update variable list
-                      varlist <- allowedVariables$variable[allowedVariables$dataset == input$comparisonDataset]
+                      varlist <- allowedcompVariables$variable[allowedcompVariables$dataset == input$comparisonDataset]
                       ## If variable was selected, update filter list, read data and
                       ## draw overview plot, else abort
                       if (input$comparisonVariable %in% varlist) {
@@ -1088,7 +1130,7 @@ ui <- shinyUI(
         selectInput("variable", NULL, #"Choose a variable:",
                     NULL),
 
-        actionButton("showComparisonDataDialog", "Add comparison data"),
+        actionButton("showComparisonDataDialog", "Add comparison data (lv0)"),
 
         tags$br(),
         tags$br(),
