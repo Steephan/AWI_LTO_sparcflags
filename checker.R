@@ -1,4 +1,4 @@
-#############################################################################
+###.........................................................................
 ##
 ##   Shiny App
 ##
@@ -18,31 +18,34 @@
 ##   last check: 2020-02-05
 ##   checked by: christian.lehr@awi.de
 ##
-#############################################################################
+###.........................................................................
 ##
 ## open issues:
+##   - 
 ##
 ##
-##
-#############################################################################
+###.........................................................................
 ##
 ## last modification:
-## - new pathes to git structure
+##  2021-05-14 SL add run buttun to create/update checkfiles 
+##  2021-05-14 SL new pathes to git structure
 ##
 ## - display only the years that were selected in the trendviewer (rs) app to perform the complete check.
 ##    ==> because the check for the complete series is always for the complete series, irrespective of the begin and end of the check period
 ##
-###############################################################################
+###.........................................................................
 ##
 ## comments:
 ##
-###############################################################################
+###.........................................................................
 
 library("shiny")
 library("shinyjs")
 library("DT")
 library("tidyr")
 library("shinyBS")
+library("shinybusy")
+library("shinyWidgets")
 
 #### import data ####
 # select running system:
@@ -56,120 +59,138 @@ running.system <- 1
 ## (b) the file with the definition of the style of the shiny-apps
 if (running.system == 1) {
   # read paths and allowed variables for windows
-  yearlyDatasetPaths <- read.csv("N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings_shiny/yearlyDataPath_auto.csv",
+  yearlyDataPath <<- read.csv("N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings_shiny/yearlyDataPath_auto.csv",
                                  stringsAsFactors = FALSE, strip.white = TRUE)
-  allowedVariables   <- read.csv("N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings_shiny/allowedVariables.csv",
+  allowedVariables   <<- read.csv("N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings_shiny/allowedVariables.csv",
                                  stringsAsFactors = FALSE, strip.white = TRUE)
-  filterbasepath     <- "N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/filter.files/"
-  checkbasepath      <- "N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/check.files/"
+  filterbasepath     <<- "N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/filter.files/"
+  checkbasepath      <<- "N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/check.files/"
+  scriptpath         <<- "N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/"
   # read file for modification of style of shiny-app
   source("N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/additionals_shiny/appCSS.R")
 } else if (running.system == 2) {
   # read paths and allowed variables for linux
-  yearlyDatasetPaths <- read.csv("/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings_shiny/yearlyDataPath_AWI.csv", stringsAsFactors = FALSE,
+  yearlyDataPath <<- read.csv("/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings_shiny/yearlyDataPath_AWI.csv", stringsAsFactors = FALSE,
                                  strip.white = TRUE)
-  allowedVariables <- read.csv("/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings_shiny/allowedVariables.csv", stringsAsFactors = FALSE,
+  allowedVariables <<- read.csv("/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings_shiny/allowedVariables.csv", stringsAsFactors = FALSE,
                                strip.white = TRUE)
-  filterbasepath     <- "/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/filter.files/"
-  checkbasepath      <- "/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/check.files/"
-  # read file for modification of style of shiny-app
+  filterbasepath     <<- "/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/filter.files/"
+  checkbasepath      <<- "/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/check.files/"
+  scriptpath         <<- "/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/"
+    # read file for modification of style of shiny-app
   source("/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/additionals_shiny/appCSS.R")
 }
 
-###############################
+###.........................................................................
 
 stations <- c("Bayelva" = "Ba","Kurungnakh" = "Ku", "Samoylov" = "Sa", "Sardakh" = "Sd", "TVC" = "TVC")
 datasets <- vector("list", length(stations))
 # Define which years to check:
 # The check period starts with the first year and ends with the last complete year before the recent year.
 recent.year <- as.numeric(format(Sys.Date(), "%Y"))
-check.end <- recent.year - 1 # for a check of the script use only recent.year (without - 1)
+check.end <- recent.year  # for a check of the script use only recent.year (without - 1)
 # special condition for Samoylov ==> here only the period until two years before the recent year can be checked
 # check.end.s <- recent.year - 2
 #years <- list(1998:check.end, 2013:check.end, 1998:check.end.s, 2009:check.end, 2016:check.end)
 years <- list(1998:check.end, 2013:check.end, 1998:check.end, 2009:check.end, 2016:check.end)
 
 for (i in 1:length(datasets)) {
-  datasets[[i]] <- trimws(as.character(unique(yearlyDatasetPaths$dataset[which(yearlyDatasetPaths$station == names(stations)[i])])), "l")
+  datasets[[i]] <- trimws(as.character(unique(yearlyDataPath$dataset[which(yearlyDataPath$station == names(stations)[i])])), "l")
 }
 
-###############################
-#### helper functions for busy/error button feedbacks
-#
-# https://github.com/daattali/advanced-shiny/tree/master/busy-indicator
-#
-# Set up a button to have an animated loading indicator and a checkmark
-# for better user experience
-# Need to use with the corresponding `withBusyIndicator` server function
-withBusyIndicatorUI <- function(button) {
-  id <- button[['attribs']][['id']]
-  div(
-    `data-for-btn` = id,
-    button,
-    span(
-      class = "btn-loading-container",
-      hidden(
-        icon("spinner", class = "btn-loading-indicator"),
-        icon("check", class = "btn-done-indicator")
-      )
-    ),
-    hidden(
-      div(class = "btn-err",
-          div(icon("exclamation-circle"),
-              tags$b("Error: "),
-              span(class = "btn-err-msg")
-          )
-      )
-    )
-  )
-}
+###.........................................................................
+# #### helper functions for busy/error button feedbacks
+# #
+# # https://github.com/daattali/advanced-shiny/tree/master/busy-indicator
+# #
+# # Set up a button to have an animated loading indicator and a checkmark
+# # for better user experience
+# # Need to use with the corresponding `withBusyIndicator` server function
+# withBusyIndicatorUI <- function(button) {
+#   id <- button[['attribs']][['id']]
+#   div(
+#     `data-for-btn` = id,
+#     button,
+#     span(
+#       class = "btn-loading-container",
+#       hidden(
+#         icon("spinner", class = "btn-loading-indicator"),
+#         icon("check", class = "btn-done-indicator")
+#       )
+#     ),
+#     hidden(
+#       div(class = "btn-err",
+#           div(icon("exclamation-circle"),
+#               tags$b("Error: "),
+#               span(class = "btn-err-msg")
+#           )
+#       )
+#     )
+#   )
+# }
+# 
+# # Call this function from the server with the button id that is clicked and the
+# # expression to run when the button is clicked
+# withBusyIndicatorServer <- function(buttonId, expr) {
+#   # UX stuff: show the "busy" message, hide the other messages, disable the button
+#   loadingEl <- sprintf("[data-for-btn=%s] .btn-loading-indicator", buttonId)
+#   doneEl <- sprintf("[data-for-btn=%s] .btn-done-indicator", buttonId)
+#   errEl <- sprintf("[data-for-btn=%s] .btn-err", buttonId)
+#   shinyjs::disable(buttonId)
+#   shinyjs::show(selector = loadingEl)
+#   shinyjs::hide(selector = doneEl)
+#   shinyjs::hide(selector = errEl)
+#   on.exit({
+#     shinyjs::enable(buttonId)
+#     shinyjs::hide(selector = loadingEl)
+#   })
+# 
+#   # Try to run the code when the button is clicked and show an error message if
+#   # an error occurs or a success message if it completes
+#   tryCatch({
+#     value <- expr
+#     shinyjs::show(selector = doneEl)
+#     shinyjs::delay(2000, shinyjs::hide(selector = doneEl, anim = TRUE, animType = "fade", time = 0.5))
+#     value
+#   }, error = function(err) { errorFunc(err, buttonId) })
+# }
+# 
+# # When an error happens after a button click, show the error
+# errorFunc <- function(err, buttonId) {
+#   errEl <- sprintf("[data-for-btn=%s] .btn-err", buttonId)
+#   errElMsg <- sprintf("[data-for-btn=%s] .btn-err-msg", buttonId)
+#   errMessage <- gsub("^ddpcr: (.*)", "\\1", err$message)
+#   shinyjs::html(html = errMessage, selector = errElMsg)
+#   shinyjs::show(selector = errEl, anim = TRUE, animType = "fade")
+# }
+# 
 
-# Call this function from the server with the button id that is clicked and the
-# expression to run when the button is clicked
-withBusyIndicatorServer <- function(buttonId, expr) {
-  # UX stuff: show the "busy" message, hide the other messages, disable the button
-  loadingEl <- sprintf("[data-for-btn=%s] .btn-loading-indicator", buttonId)
-  doneEl <- sprintf("[data-for-btn=%s] .btn-done-indicator", buttonId)
-  errEl <- sprintf("[data-for-btn=%s] .btn-err", buttonId)
-  shinyjs::disable(buttonId)
-  shinyjs::show(selector = loadingEl)
-  shinyjs::hide(selector = doneEl)
-  shinyjs::hide(selector = errEl)
-  on.exit({
-    shinyjs::enable(buttonId)
-    shinyjs::hide(selector = loadingEl)
-  })
-
-  # Try to run the code when the button is clicked and show an error message if
-  # an error occurs or a success message if it completes
-  tryCatch({
-    value <- expr
-    shinyjs::show(selector = doneEl)
-    shinyjs::delay(2000, shinyjs::hide(selector = doneEl, anim = TRUE, animType = "fade", time = 0.5))
-    value
-  }, error = function(err) { errorFunc(err, buttonId) })
-}
-
-# When an error happens after a button click, show the error
-errorFunc <- function(err, buttonId) {
-  errEl <- sprintf("[data-for-btn=%s] .btn-err", buttonId)
-  errElMsg <- sprintf("[data-for-btn=%s] .btn-err-msg", buttonId)
-  errMessage <- gsub("^ddpcr: (.*)", "\\1", err$message)
-  shinyjs::html(html = errMessage, selector = errElMsg)
-  shinyjs::show(selector = errEl, anim = TRUE, animType = "fade")
-}
-
-
-###############################
+###.........................................................................
 #### server logic ####
 server <- shinyServer(function(input, output, session) {
+  observeEvent(input$b.utton, {# process button
+    show_modal_progress_line(color = "#06afce",text = "Starting computation",height = "40px")
+    start_time <- Sys.time()     
+    update_modal_progress(0.1,
+                          text = paste("loading existing files"))
+    Sys.sleep(3)# to see the last comment
+    try(source(paste0(scriptpath, "additionals_shiny/create_update_checkfiles.R")))
+    
+    
+    end_time <- Sys.time()     
+    update_modal_progress(1,
+                          text = paste("Finished within ",round(end_time-start_time,0)," sec\n"))
+    
+    Sys.sleep(3)# to see the last comment
+    remove_modal_progress()
+  })
 
 
-  #############
+  ###.........................................................................
   # create one table with all combinations of stations, years, datasets and variables.
   df.0 <- data.frame("station" = character(0), "dataset" = character(0), "variable" = character(0), "check1" = character(0), "controller1" = character(0), "check2" = character(0), "controller2" = character(0), "year" = character(0))
 
-  ######
+  ###.........................................................................
   # loop for yearly checks of series
   for (i in 1:length(stations)) {
     for (k in 1:length(years[[i]])) {
@@ -201,7 +222,7 @@ server <- shinyServer(function(input, output, session) {
   # https://stackoverflow.com/questions/29035508/r-add-character-vector-to-data-frame-row
   indx       <- sapply(df.0, is.factor)
   df.0[indx] <- lapply(df.0[indx], as.character)
-  #############
+  ###.........................................................................
 
   # create one table with all combinations of stations, years, datasets and variables
   # for the two annual checks (Check 1 and 2) + the check of the complete series (check 3)
@@ -271,7 +292,7 @@ server <- shinyServer(function(input, output, session) {
                                )
     })
 
-    ###################
+    ###.........................................................................
     # for output$clickIndex1 and output$clickIndex2 the functions validate(need(...)) and req(...) are used to omit error messages which are related to missing input during the start of the application. (When the application is started the first time no cells are selected.)
     output$clickIndex1 <- renderText({
       # if no cells are selected ask the user to select a cell
@@ -386,7 +407,7 @@ server <- shinyServer(function(input, output, session) {
   # function to select which station and dataset is used for the subsetting of the data
   observeEvent(list(input$year, input$variable, input$dataset, input$station), {
     # update dataset list
-    datasets <- yearlyDatasetPaths$dataset[yearlyDatasetPaths$station == input$station]
+    datasets <- yearlyDataPath$dataset[yearlyDataPath$station == input$station]
     if (input$dataset %in% datasets) {
       # double update to trigger input$dataset invalidation
       updateSelectInput(session, "dataset", choices = datasets, selected = input$dataset)
@@ -401,7 +422,7 @@ server <- shinyServer(function(input, output, session) {
 })
 
 
-###############################
+###.........................................................................
 #### user interface ####
 ui <- shinyUI(
   fluidPage(
@@ -422,10 +443,10 @@ ui <- shinyUI(
 
         # drop down menus to selecet the station and the dataset to be displayed
         selectInput("station", "Choose a station:", selected = "Sardakh", #"Samoylov",
-                    choices = sort(unique(yearlyDatasetPaths$station))),
+                    choices = sort(unique(yearlyDataPath$station))),
         #bsTooltip('station', 'This button will inflate a balloon'),
         selectInput("dataset", "Choose a dataset:", selected = "SdHole2009",##"SaMet2002",
-                    choices = yearlyDatasetPaths$dataset[yearlyDatasetPaths$year == 2018 & yearlyDatasetPaths$station == "Sardakh"]),#"Samoylov"]),
+                    choices = yearlyDataPath$dataset[yearlyDataPath$year == 2018 & yearlyDataPath$station == "Sardakh"]),#"Samoylov"]),
 
         tags$hr(),
 
@@ -435,7 +456,15 @@ ui <- shinyUI(
         p("check 2"),
         verbatimTextOutput("clickIndex2"),
         p("check of complete series"),
-        verbatimTextOutput("clickIndex3")
+        verbatimTextOutput("clickIndex3"),
+        hr(),
+        p("for new years and new stations, refresh check files"),
+        actionBttn(
+          inputId = "b.utton",
+          label = "Refresh check files",
+          style = "float", 
+          color = "danger"
+        )
       ),
 
       mainPanel(
@@ -446,7 +475,7 @@ ui <- shinyUI(
 )
 
 
-###############################
+###.........................................................................
 #### run ####
 # options(shiny.reactlog = FALSE)
 runApp(shinyApp(ui = ui, server = server))
