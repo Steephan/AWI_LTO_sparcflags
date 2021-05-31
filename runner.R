@@ -345,7 +345,7 @@ server <- function(input, output, session) {
                                    "SaSnow2012","SaSnow2016","SaSoil2002","SaSoil2012",
                                    "SdHole2009","SdHole20091","SdHole20092",
                                    "KuQ12013",
-                                   "TVCSoil2016") ){# standard case ----
+                                   "TVCSoil2016","TVCHole12015","TVCHole22015") ){# standard case ----
             run.year <<-  as.numeric(j)  #
             try(source(paste0(p.1$w[p.1$n == "script.p"], "required-scripts-and-files/additionals/r-wikiplot-scripts/"
                               ,"/LV1_plots_",input$d.ataset,".R")))
