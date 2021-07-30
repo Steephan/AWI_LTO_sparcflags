@@ -20,6 +20,7 @@ if (running.system == 1) {
   # read paths and allowed variables for windows
   p.1 <<- read.table("N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/path_win.txt", sep = "\t", header = T)
   p.1maint <<- read.table("N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/maintenance.files/maintance.txt", sep = "\t", header = T)
+  p.1zero <<- read.table("N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/zero.curtain/zero.curtain.doy_TVC.dat", sep = ",",header = T)
   
   yearlyDatasetPaths <- read.csv("N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings_shiny/yearlyDataPath_auto.csv",
                                  stringsAsFactors = FALSE, strip.white = TRUE)
@@ -36,6 +37,7 @@ if (running.system == 1) {
   # read paths and allowed variables for linux
   p.1 <<- read.table("/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/path_linux.txt", sep = "\t", header = T, fileEncoding = "UTF-8")
   p.1maint <<- read.table("/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/maintenance.files/maintance.txt", sep = "\t", header = T)
+  p.1zero <<- read.table("/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/zero.curtain/zero.curtain.doy_TVC.dat", sep = ",",header = T)
   
   yearlyDatasetPaths <- try(read.csv("/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings_shiny/yearlyDataPath_AWI.csv", stringsAsFactors = FALSE,
                                      strip.white = TRUE))
@@ -194,17 +196,30 @@ server <- function(input, output, session) {
     
   })
   observeEvent(input$d.ataset, {
-    updatePickerInput(
-      session = session,
-      inputId = "y.ears",
-      label = "Select dataset",
-      choices = rev(unique(i.nput$year[i.nput$dataset==input$d.ataset])),
-      selected = rev(unique(i.nput$year[i.nput$dataset==input$d.ataset]))[1],
-      choicesOpt = NULL,
-      options = NULL,
-      clearOptions = FALSE
-    )
     
+#    if(input$d.ataset%%in%%c("BaSoil1998","BaMet1998")){
+      updatePickerInput(
+        session = session,
+        inputId = "y.ears",
+        label = "Select dataset",
+        choices = rev(unique(i.nput$year[i.nput$dataset==input$d.ataset])),
+        selected = rev(unique(i.nput$year[i.nput$dataset==input$d.ataset]))[1],
+        choicesOpt = NULL,
+        options = NULL,
+        clearOptions = FALSE
+      )
+   #  }else{
+   #    updatePickerInput(
+   #      session = session,
+   #      inputId = "y.ears",
+   #      label = "Select dataset",
+   #      choices = rev(unique(i.nput$year[i.nput$dataset==input$d.ataset])),
+   #      selected = rev(unique(i.nput$year[i.nput$dataset==input$d.ataset]))[1],
+   #      choicesOpt = NULL,
+   #      options = NULL,
+   #      clearOptions = FALSE
+   #    )
+   # }
     if(input$d.ataset%in%c("SaSnow2012","SaSoil2002")){
       if (!is.null(n.ote1))
         return()
@@ -283,7 +298,7 @@ server <- function(input, output, session) {
             cat("not implemented yet")
           }else if(input$d.ataset %in% c("KuLucky22014","KuLucky2013") ){# case KuLucky ... 1 script for 2 stations ----
             try(source(paste0(p.1$w[p.1$n == "script.p"], "r-level-0-scripts/Kurungnakh/RAW_to_LV0_KuLucky22014_KuLucky2013.R")))
-          }else if(input$d.ataset %in% c("TVCSoil2016") ){# case TVCSoil2016 ... tricky name TrailValleyCreek ----
+          }else if(input$d.ataset %in% c("TVCSoil2016","TVCHole12015","TVCHole22015") ){# case TVCSoil2016 ... tricky name TrailValleyCreek ----
             try(source(paste0(p.1$w[p.1$n == "script.p"], "r-level-0-scripts/TrailValleyCreek/RAW_to_LV0_",input$d.ataset,".R")))
           }else{# standard case ----
             try(source(paste0(p.1$w[p.1$n == "script.p"], "r-level-0-scripts/",input$s.tation,"/RAW_to_LV0_",input$d.ataset,".R")))
@@ -301,7 +316,10 @@ server <- function(input, output, session) {
           
         }else if(i=="O2A"){
           ### O2A ----------------------
-          if(input$d.ataset %in% c("BaMet2009","BaHole2009","BaSoil2009","BaSnow2013") ){
+          if(input$d.ataset %in% c('BaSoil2009', 'BaMet2009','BaHole2021',
+                                   'BaSnow2013','BaSnow2019cs','BaSnow2019sr',
+                                   'SaMet2002','SaSnow2012',
+                                   'SaSoil2002','SaSoil2012') ){
             station <<- input$d.ataset 
             day.shift <<- 40 ## optional selectabel
             run.year <<-  as.numeric(j)  #
@@ -345,7 +363,7 @@ server <- function(input, output, session) {
                                    "SaSnow2012","SaSnow2016","SaSoil2002","SaSoil2012",
                                    "SdHole2009","SdHole20091","SdHole20092",
                                    "KuQ12013",
-                                   "TVCSoil2016","TVCHole12015","TVCHole22015") ){# standard case ----
+                                   "TVCSoil2016","TVCHole12015","TVCHole22015","TVCeccc") ){# standard case ----
             run.year <<-  as.numeric(j)  #
             try(source(paste0(p.1$w[p.1$n == "script.p"], "required-scripts-and-files/additionals/r-wikiplot-scripts/"
                               ,"/LV1_plots_",input$d.ataset,".R")))
@@ -386,7 +404,9 @@ server <- function(input, output, session) {
         }else if(i=="Overviewplots"){
           ### overviewplots ----------------------  
           
-          if(input$d.ataset %in% c("BaHole2009","BaHole2015","BaHole2021","BaMet2009","BaSnow2013","BaSnow2019cs","BaSoil2017","BaSoil2009") ){
+          if(input$d.ataset %in% c("BaHole2009", "BaHole2015", "BaMet2009","BaSnow2013", "BaSoil2009", "BaSoil2017", 
+                                   "TVCSoil2016",
+                                   "SaMet2002","SaSnow2012","SaSoil2002") ){
             station <<- input$d.ataset 
             run.year <<-  as.numeric(j)  #
             try(source(paste0(p.1$w[p.1$n == "script.p"], "required-scripts-and-files/additionals/OverviewPlots_test.R")))
