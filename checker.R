@@ -52,14 +52,14 @@ library("shinyWidgets")
 # 1 - windows
 # 2 - linux AWI
 
-running.system <- 1
+running.system <- 2
 
 ## read paths for
 ## (a) data files, allowed variables, filter files, check files, etc.
 ## (b) the file with the definition of the style of the shiny-apps
 if (running.system == 1) {
   # read paths and allowed variables for windows
-  yearlyDataPath <<- read.csv("N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings_shiny/yearlyDataPath_auto.csv",
+  yearlyDataPath     <<- read.csv("N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings_shiny/yearlyDataPath_auto.csv",
                                  stringsAsFactors = FALSE, strip.white = TRUE)
   allowedVariables   <<- read.csv("N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings_shiny/allowedVariables.csv",
                                  stringsAsFactors = FALSE, strip.white = TRUE)
@@ -70,10 +70,10 @@ if (running.system == 1) {
   source("N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/additionals_shiny/appCSS.R")
 } else if (running.system == 2) {
   # read paths and allowed variables for linux
-  yearlyDataPath <<- read.csv("/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings_shiny/yearlyDataPath_AWI.csv", stringsAsFactors = FALSE,
+  yearlyDataPath     <<- read.csv("/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings_shiny/yearlyDataPath_AWI.csv", stringsAsFactors = FALSE,
                                  strip.white = TRUE)
-  allowedVariables <<- read.csv("/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings_shiny/allowedVariables.csv", stringsAsFactors = FALSE,
-                               strip.white = TRUE)
+  allowedVariables   <<- read.csv("/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings_shiny/allowedVariables.csv", stringsAsFactors = FALSE,
+                                 strip.white = TRUE)
   filterbasepath     <<- "/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/filter.files/"
   checkbasepath      <<- "/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/check.files/"
   scriptpath         <<- "/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/"
@@ -99,73 +99,6 @@ for (i in 1:length(datasets)) {
 }
 
 ###.........................................................................
-# #### helper functions for busy/error button feedbacks
-# #
-# # https://github.com/daattali/advanced-shiny/tree/master/busy-indicator
-# #
-# # Set up a button to have an animated loading indicator and a checkmark
-# # for better user experience
-# # Need to use with the corresponding `withBusyIndicator` server function
-# withBusyIndicatorUI <- function(button) {
-#   id <- button[['attribs']][['id']]
-#   div(
-#     `data-for-btn` = id,
-#     button,
-#     span(
-#       class = "btn-loading-container",
-#       hidden(
-#         icon("spinner", class = "btn-loading-indicator"),
-#         icon("check", class = "btn-done-indicator")
-#       )
-#     ),
-#     hidden(
-#       div(class = "btn-err",
-#           div(icon("exclamation-circle"),
-#               tags$b("Error: "),
-#               span(class = "btn-err-msg")
-#           )
-#       )
-#     )
-#   )
-# }
-# 
-# # Call this function from the server with the button id that is clicked and the
-# # expression to run when the button is clicked
-# withBusyIndicatorServer <- function(buttonId, expr) {
-#   # UX stuff: show the "busy" message, hide the other messages, disable the button
-#   loadingEl <- sprintf("[data-for-btn=%s] .btn-loading-indicator", buttonId)
-#   doneEl <- sprintf("[data-for-btn=%s] .btn-done-indicator", buttonId)
-#   errEl <- sprintf("[data-for-btn=%s] .btn-err", buttonId)
-#   shinyjs::disable(buttonId)
-#   shinyjs::show(selector = loadingEl)
-#   shinyjs::hide(selector = doneEl)
-#   shinyjs::hide(selector = errEl)
-#   on.exit({
-#     shinyjs::enable(buttonId)
-#     shinyjs::hide(selector = loadingEl)
-#   })
-# 
-#   # Try to run the code when the button is clicked and show an error message if
-#   # an error occurs or a success message if it completes
-#   tryCatch({
-#     value <- expr
-#     shinyjs::show(selector = doneEl)
-#     shinyjs::delay(2000, shinyjs::hide(selector = doneEl, anim = TRUE, animType = "fade", time = 0.5))
-#     value
-#   }, error = function(err) { errorFunc(err, buttonId) })
-# }
-# 
-# # When an error happens after a button click, show the error
-# errorFunc <- function(err, buttonId) {
-#   errEl <- sprintf("[data-for-btn=%s] .btn-err", buttonId)
-#   errElMsg <- sprintf("[data-for-btn=%s] .btn-err-msg", buttonId)
-#   errMessage <- gsub("^ddpcr: (.*)", "\\1", err$message)
-#   shinyjs::html(html = errMessage, selector = errElMsg)
-#   shinyjs::show(selector = errEl, anim = TRUE, animType = "fade")
-# }
-# 
-
-###.........................................................................
 #### server logic ####
 server <- shinyServer(function(input, output, session) {
   observeEvent(input$b.utton, {# process button
@@ -173,7 +106,7 @@ server <- shinyServer(function(input, output, session) {
     start_time <- Sys.time()     
     update_modal_progress(0.1,
                           text = paste("loading existing files"))
-    Sys.sleep(3)# to see the last comment
+    Sys.sleep(1)# to see the last comment
     try(source(paste0(scriptpath, "additionals_shiny/create_update_checkfiles.R")))
     
     
@@ -181,7 +114,7 @@ server <- shinyServer(function(input, output, session) {
     update_modal_progress(1,
                           text = paste("Finished within ",round(end_time-start_time,0)," sec\n"))
     
-    Sys.sleep(3)# to see the last comment
+    Sys.sleep(1)# to see the last comment
     remove_modal_progress()
   })
 
@@ -478,7 +411,7 @@ ui <- shinyUI(
 ###.........................................................................
 #### run ####
 # options(shiny.reactlog = FALSE)
-runApp(shinyApp(ui = ui, server = server))
+#runApp(shinyApp(ui = ui, server = server))
 # for app.R in shiny-server:
-# shinyApp(ui = ui, server = server)
+shinyApp(ui = ui, server = server)
 
