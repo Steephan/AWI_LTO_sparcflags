@@ -40,14 +40,14 @@
 ##
 ###############################################################################
 
-library(dplyr)
+#library(dplyr)
 library(shiny)
 library(shinyjs)
 library(DT)
 library(rbokeh)
 
 #### import data ####
-running.system <- 1
+running.system <- 2
 #
 # 1 - windows
 # 2 - linux AWI
@@ -651,6 +651,6 @@ ui <- shinyUI(
 
 #### run ####
 #options(shiny.reactlog = FALSE)
-runApp(shinyApp(ui = ui, server = server))
+#runApp(shinyApp(ui = ui, server = server))
 # for app.R in shiny-server:
-# shinyApp(ui = ui, server = server)
+shinyApp(ui = ui, server = server)
