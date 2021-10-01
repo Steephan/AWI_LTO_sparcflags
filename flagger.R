@@ -50,14 +50,10 @@ library(shiny)
 library(shinyjs)
 library(DT)
 
-#### import data ####
-running.system <- 1
-#
-# 1 - windows
-# 2 - linux AWI
+
 
 ## read paths and allowed variables
-if (running.system == 1) {
+if (.Platform$OS.type == "windows") {
   yearlyDatasetPaths <- read.csv("N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings_shiny/yearlyDataPath_auto.csv",
                                  stringsAsFactors = FALSE, strip.white = TRUE)
   allowedVariables   <- read.csv("N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings_shiny/allowedVariables.csv",
@@ -73,11 +69,14 @@ if (running.system == 1) {
   maint_sa <- read.table("N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/maintenance.files/sa_maintance.txt", sep = "\t", header = T)
   # read file for modification of style of shiny-app
   source("N:/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/additionals_shiny/appCSS.R")
-} else if (running.system == 2) {
+} else {
   yearlyDatasetPaths <- read.csv("/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings_shiny/yearlyDataPath_AWI.csv", stringsAsFactors = FALSE,
                                  strip.white = TRUE)
   allowedVariables <- read.csv("/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings_shiny/allowedVariables.csv", stringsAsFactors = FALSE,
                                strip.white = TRUE)
+  allowedcompVariables   <- read.csv("/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings_shiny/allowedcompVariables.csv",
+                                     stringsAsFactors = FALSE, strip.white = TRUE)
+  
   #db.path            <- "/sparc/LTO/R_database/database_R/Sa_02_Lvl0_Lvl1/"
   filterbasepath     <- "/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/filter.files/"
   checkbasepath      <- "/sparc/LTO/R_database/Time_series_preprocessing/required-scripts-and-files/settings/check.files/"
@@ -245,23 +244,24 @@ server <- shinyServer(function(input, output, session) {
         if(input$comparisonrange == TRUE){
           legend("topleft", paste("comparison:", input$comparisonVariable,
                                   input$comparisonDataset, input$comparisonYear),
-                 lty = 1, col = "lightskyblue")
-          lines(x = comparisonData$UTC, y = comparisonData$value, col = "lightskyblue")
-          pos.comp.axis<-c(range(comparisonData$value),round(mean(comparisonData$value),2),range(comparisonData$value))
-          axis(4,at=pos.comp.axis,labels=pos.comp.axis,col="lightskyblue",col.axis="lightskyblue")
+                 lty = 2, col = "red")
+          lines(x = comparisonData$UTC, y = comparisonData$value, col = "red")
+          pos.comp.axis<-c(range(na.omit(comparisonData$value)),round(mean(na.omit(comparisonData$value)),2),range(na.omit(comparisonData$value)))
+          axis(4,at=pos.comp.axis,labels=pos.comp.axis,col="red",col.axis="red")
           #browser()
         }else if(input$comparisonrange == FALSE){
           legend("topleft", paste("comparison:", input$comparisonVariable,
                                   input$comparisonDataset, input$comparisonYear),
-                 lty = 1, col = "lightskyblue")
-          comparisonData$valuez <- comparisonData$value-mean(range(comparisonData$value))
-          comp.ratio <- diff(datarange)/diff(range(comparisonData$value))
-          pos.comp.axis <- c(range(comparisonData$valuez)[1]*comp.ratio,round(mean(comparisonData$valuez),2),range(comparisonData$valuez)[2]*comp.ratio)
-          lab.comp.axis <- c(range(comparisonData$value)[1],round(mean(comparisonData$value),2),range(comparisonData$value)[2])
-          lines(x = comparisonData$UTC, y = comp.ratio*(comparisonData$value-mean(range(comparisonData$value))), col = "lightskyblue")
-          axis(4,at=pos.comp.axis,labels=lab.comp.axis,col="lightskyblue",col.axis="lightskyblue")
-          
+                 lty = 2, col = "red")
           #browser()
+          comparisonData$valuez <- comparisonData$value-mean(range(na.omit(comparisonData$value)))
+          comp.ratio <- diff(datarange)/diff(range(na.omit(comparisonData$value)))
+          pos.comp.axis <- c(range(na.omit(comparisonData$valuez))[1]*comp.ratio,round(mean(na.omit(comparisonData$valuez)),2),range(na.omit(comparisonData$valuez))[2]*comp.ratio)
+          lab.comp.axis <- c(range(na.omit(comparisonData$value))[1],round(mean(na.omit(comparisonData$value)),2),range(na.omit(comparisonData$value))[2])
+          lines(x = comparisonData$UTC, y = comp.ratio*(comparisonData$value-mean(range(na.omit(comparisonData$value)))), col = "red")
+          axis(4,at=pos.comp.axis,labels=lab.comp.axis,col="red",col.axis="red")
+          
+          #
      }}
       
       # plot regular values
@@ -379,21 +379,22 @@ server <- shinyServer(function(input, output, session) {
         if(input$comparisonrange == TRUE){
           legend("topleft", paste("comparison:", input$comparisonVariable,
                                   input$comparisonDataset, input$comparisonYear),
-                 lty = 1, col = "lightskyblue")
-          lines(x = comparisonData$UTC, y = comparisonData$value, col = "lightskyblue")
-          pos.comp.axis<-c(range(comparisonData$value),round(mean(comparisonData$value),2),range(comparisonData$value))
-          axis(4,at=pos.comp.axis,labels=pos.comp.axis,col="lightskyblue",col.axis="lightskyblue")
+                 lty = 1, col = "red")
+          lines(x = comparisonData$UTC, y = comparisonData$value, col = "red")
+          pos.comp.axis<-c(range(na.omit(comparisonData$value)),round(mean(na.omit(comparisonData$value)),2),range(na.omit(comparisonData$value)))
+          axis(4,at=pos.comp.axis,labels=pos.comp.axis,col="red",col.axis="red")
+          
           #browser()
         }else if(input$comparisonrange == FALSE){
           legend("topleft", paste("comparison:", input$comparisonVariable,
                                   input$comparisonDataset, input$comparisonYear),
-                 lty = 1, col = "lightskyblue")
-          comparisonData$valuez <- comparisonData$value-mean(range(comparisonData$value))
-          comp.ratio <- diff(datarange)/diff(range(comparisonData$value))
-          pos.comp.axis <- c(range(comparisonData$valuez)[1]*comp.ratio,round(mean(comparisonData$valuez),2),range(comparisonData$valuez)[2]*comp.ratio)
-          lab.comp.axis <- c(range(comparisonData$value)[1],round(mean(comparisonData$value),2),range(comparisonData$value)[2])
-          lines(x = comparisonData$UTC, y = comp.ratio*(comparisonData$value-mean(range(comparisonData$value))), col = "lightskyblue")
-          axis(4,at=pos.comp.axis,labels=lab.comp.axis,col="lightskyblue",col.axis="lightskyblue")
+                 lty = 1, col = "red")
+          comparisonData$valuez <- comparisonData$value-mean(range(na.omit(comparisonData$value)))
+          comp.ratio <- diff(datarange)/diff(range(na.omit(comparisonData$value)))
+          pos.comp.axis <- c(range(na.omit(comparisonData$valuez))[1]*comp.ratio,round(mean(na.omit(comparisonData$valuez)),2),range(na.omit(comparisonData$valuez))[2]*comp.ratio)
+          lab.comp.axis <- c(range(na.omit(comparisonData$value))[1],round(mean(na.omit(comparisonData$value)),2),range(na.omit(comparisonData$value))[2])
+          lines(x = comparisonData$UTC, y = comp.ratio*(comparisonData$value-mean(range(na.omit(comparisonData$value)))), col = "red")
+          axis(4,at=pos.comp.axis,labels=lab.comp.axis,col="red",col.axis="red")
           
           #browser()
         }}
@@ -1211,6 +1212,6 @@ ui <- shinyUI(
 
 #### run ####
 #options(shiny.reactlog = FALSE)
-runApp(shinyApp(ui = ui, server = server))
+# runApp(shinyApp(ui = ui, server = server))
 # for app.R in shiny-server:
-# shinyApp(ui = ui, server = server)
+shinyApp(ui = ui, server = server)
