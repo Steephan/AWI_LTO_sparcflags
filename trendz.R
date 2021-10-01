@@ -41,6 +41,8 @@
 
 library(shiny)
 library(data.table)
+library(nlme)
+library(Kendall)
 #library(shinyjs)
 
 #### import data ####
@@ -171,6 +173,20 @@ server <- shinyServer(function(input, output, session) {
       allowedmonths <- do.call(seq, as.list(input$monthslider))
     }
     
+    # subset data for statistics
+    if (input$stats.p != "") {
+      # handle custom months string
+      tryCatch({
+        allowed.p <- as.numeric(input$stats.p)
+        if (any(is.na(allowed.p))) stop()
+      }, error = function(e) {
+        validate(need(FALSE, paste0("Could not parse percentage. Please enter single number ",
+                                    "between 0-100  ",)))
+      })
+    } else {
+      allowed.p <- 80
+    }
+    
     plotdata <- store$data[store$data$year >= input$yearslider[1] &
                              store$data$year <= input$yearslider[2] &
                              store$data$month %in% allowedmonths]
@@ -180,9 +196,20 @@ server <- shinyServer(function(input, output, session) {
     
     nyears <- length(unique(plotdata$year))
     n.colours <- rainbow(nyears)
+    n.colours <-rev(c("#04e762","#f5b700","#00a1e4","#dc0073","#89fc00",
+                  "#ffb2e6","#d972ff","#8447ff","#8cffda",
+                  "#f2efea","#fc7753","#66d7d1","#403d58","#dbd56e",
+                  "#7c6a0a","#babd8d","#ffdac6","#fa9500","#eb6424"))[1:nyears]
+
+                 
     plotdata$colour <- n.colours[factor(plotdata$year)]
     uhhi <- aggregate(plotdata[, get(variablename)] ~ plotdata$year, data = plotdata, FUN = input$stats.f)
+    uhhi2 <- aggregate(plotdata[, get(variablename)] ~ plotdata$year, data = plotdata, FUN = "length")
+    uhhi<-uhhi[which(max(uhhi2[,2]) * allowed.p * 0.01 <= uhhi2[,2]),] 
+    
+    
     colnames(uhhi) <- c("year",variablename)
+    colnames(uhhi) <- c("year","parameter")
     #browser()
     
     # plot
@@ -197,18 +224,19 @@ server <- shinyServer(function(input, output, session) {
     # draw y-axis grid
     grid(nx = NA, ny = NULL)
     
-    # run regression
-    #    timing <- proc.time()
-    #model <- glm(get(variablename) ~ year, data = plotdata)
-    model <- glm(get(variablename) ~ year, data = uhhi)
     
-    # run regression for posixtime to be able to draw abline in plot (x-axis is POSIXct based)
-    # plotdata$yearposix <- (plotdata$year - 1970) * 31557600
-    # modelposix <- lm(get(variablename) ~ yearposix, data = plotdata)
+    if(length(uhhi[,1])>2){
+      
+      model2 <- gls(parameter ~ year, correlation = corAR1(form = ~1), method = 'ML', data = uhhi)
+      predict(model2,data.frame(year=c(uhhi[1,1], uhhi[1,length(uhhi[,1])])))
+    }else{
+      model2<-paste0("Not enought timeseries data, please choose another variable or reduce the data per year percentage")
+    }
     uhhi$yearposix <- (uhhi$year - 1970) * 31557600
-    modelposix <- lm(get(variablename) ~ yearposix, data = uhhi)
-    #    cat(file = stderr(), "\nTime spent performing regression:",
-    #      (proc.time() - timing)[3], "s\n")
+    
+    
+    #browser()
+    
     if(input$stats.f=="sum"){
       par(new=TRUE)
       
@@ -220,26 +248,36 @@ server <- shinyServer(function(input, output, session) {
       text(((uhhi[, 1] - 1970) * 31557600) + 15768000, uhhi[, 2], labels = round(uhhi[, 2], 2),pos = 1, cex = 1.5,  col="darkblue")
       axis(4,col.ticks = "darkblue",col="darkblue",col.axis="darkblue")
     }
-    # plot model information
-    abline(modelposix, col = "green4", lwd = 2, lty = 2)
+    
+    if(length(uhhi[,1])>2){
+      lines(c((1980-1970) * 31557600, (2030-1970) * 31557600),
+            c(predict(model2, data.frame(year = c(1980,2030)))), 
+            col = "green4", lwd = 2, lty = 2)
+    }
     legend("topright", bg = "transparent", text.col = "darkblue", text.font = 2, cex = 2, box.col = "transparent",
            legend = input$stats.f)
-    if(input$stats.f %in% c("max","sum")) wo <- "bottom" else wo <- "top"
-    if(coefficients(model)[1]>=0){
-      legend(wo, bg = "transparent", text.col = "green4", text.font = 3, cex = 2, box.col = "transparent",
-             legend = paste(variablename,"(year) =",format(coefficients(model)[2], digits = 4),"* year +",
-                            format(coefficients(model)[1], digits = 4)))
-    }else{
-      legend(wo, bg = "transparent", text.col = "green4", text.font = 3, cex = 2, box.col = "transparent",
-             legend = paste(variablename,"(year) =",format(coefficients(model)[2], digits = 4),"* year -",
-                            format((-1* coefficients(model)[1]), digits = 4)))
+    
+    if(length(uhhi[,1])>2){
+      legend("bottomright", bg = "transparent", text.col = "green4", text.font = 3, cex = 2, box.col = "transparent",
+             legend = paste(" slope:                   ",format(coef(model2)[2], digits = 3),"\np-value (MannKendall):",
+                            format((MannKendall(uhhi[,2])$sl), digits = 3)))    
     }
+    
+      
     output$statistics <- renderText({
+      if(length(uhhi[,1])>2){
       paste("Summary:\n",
             paste(capture.output(summary(plotdata[, 2])), collapse = "\n"),
             "\n\nModel:",
-            paste(capture.output(summary(model)), collapse = "\n"),
+            paste(capture.output(summary(model2)), collapse = "\n"),
             collapse = "\n")
+      }else{
+      paste("Summary:\n",
+              paste(capture.output(summary(plotdata[, 2])), collapse = "\n"),
+              "\n\nModel:",
+              paste(model2, collapse = "\n"),
+              collapse = "\n")
+      }
     })
   })
   
@@ -278,6 +316,8 @@ server <- shinyServer(function(input, output, session) {
     } else {
       allowedmonths <- do.call(seq, as.list(input$monthslider))
     }
+
+    
     
     plotdata <- store$data[store$data$year >= input$yearslider[1] &
                              store$data$year <= input$yearslider[2] &
@@ -301,6 +341,10 @@ server <- shinyServer(function(input, output, session) {
     
     nyears <- length(unique(monthlymeans$year))
     n.colours <- rainbow(nyears)
+    n.colours <-rev(c("#04e762","#f5b700","#00a1e4","#dc0073","#89fc00",
+                      "#ffb2e6","#d972ff","#8447ff","#8cffda",
+                      "#f2efea","#fc7753","#66d7d1","#403d58","#dbd56e",
+                      "#7c6a0a","#babd8d","#ffdac6","#fa9500","#eb6424"))[1:nyears]
     ridgeSpacing <- 3
     ridgeOffset <- 2
     dailymeans$scaledvalue <- scale(dailymeans$value, center = FALSE)
@@ -327,17 +371,7 @@ server <- shinyServer(function(input, output, session) {
     # draw x-axis grid aligning with date ticks
     abline(v = -30 + 30.5 * seq(min(monthlymeans$month), max(monthlymeans$month)), col = "lightgray", lty = "dotted")
     
-    ## plot
-    #plot(dailymeans$yday, dailymeans$value, cex = .3, col = "gray",
-    #   xlab = "", ylab = "", xaxt = "n")
-    ## draw x-axis
-    ## draw monthly means per year
-    #xvals <- split(monthlymeans$month * 30 - 15, monthlymeans$year)
-    #yvals <- split(monthlymeans$value, monthlymeans$year)
-    #for (i in 1:length(xvals)) {
-    #  lines(xvals[[i]], yvals[[i]], col = n.colours[i], type = "b")
-    #}
-    ##mapply(lines, xvals, yvals, col = n.colours, type = "b")
+
   })
   
   output$boxplots <- renderPlot({
@@ -385,6 +419,10 @@ server <- shinyServer(function(input, output, session) {
     
     nyears <- length(unique(plotdata$year))
     n.colours <- rainbow(nyears)
+    n.colours <-rev(c("#04e762","#f5b700","#00a1e4","#dc0073","#89fc00",
+                      "#ffb2e6","#d972ff","#8447ff","#8cffda",
+                      "#f2efea","#fc7753","#66d7d1","#403d58","#dbd56e",
+                      "#7c6a0a","#babd8d","#ffdac6","#fa9500","#eb6424"))[1:nyears]
     plotdata$colour <- n.colours[factor(plotdata$year)]
     uhhi <- aggregate(plotdata[, get(variablename)] ~ plotdata$year, data = plotdata, FUN = mean)
     
@@ -523,7 +561,7 @@ ui <- shinyUI(fluidPage(
       # useShinyjs(),
       selectInput("station", "Choose a station:", selected = "Bayelva",
                   choices = sort(unique(yearlyDatasetPaths$station))),
-      selectInput("dataset", "Choose a dataset:", selected = "BaMet2009",
+      selectInput("dataset", "Choose a dataset:", selected = "BaSoil2009",
                   choices = yearlyDatasetPaths$dataset[yearlyDatasetPaths$station == "Bayelva"]),
       selectInput("variable", "Choose a variable:",  choices = NULL),
       # yearslider for year selection
@@ -549,14 +587,15 @@ ui <- shinyUI(fluidPage(
       
       selectInput("stats.f", "Choose a statistic:", selected = "mean",
                   choices = c("mean","median","min","max","sum")),
-      
+      textInput("stats.p",  "Data per year",
+                placeholder = "default is 80 %"),
       p("Statistics"),
       verbatimTextOutput("statistics")
       
     )),
     column(9,
-           plotOutput("trendplot", height = 300),
-           plotOutput("yearplot", height = 800),
+           plotOutput("trendplot", height = 350),
+           plotOutput("yearplot", height = 700),
            plotOutput("boxplots", height = 300)
     )
   )

@@ -41,7 +41,7 @@ library(data.table)
 #library(shinyjs)
 
 #### import data ####
-running.system <- 1
+running.system <- 2
 
 # 1 - windows
 # 2 - linux AWI
