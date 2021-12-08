@@ -104,9 +104,7 @@ ui <- fluidPage(
         color = "danger"
       ),
       h4("Comming features"),
-      p("- add allowedvariables script",br(),
-        "- add yearlydatapath script",br(),
-        "- links to outputs",br(),
+      p("- links to outputs",br(),
         "- links to input tables",br(),
         "- statistics for level 1 data"),
       actionBttn(
@@ -197,30 +195,18 @@ server <- function(input, output, session) {
   })
   observeEvent(input$d.ataset, {
     
-#    if(input$d.ataset%%in%%c("BaSoil1998","BaMet1998")){
       updatePickerInput(
         session = session,
         inputId = "y.ears",
         label = "Select dataset",
-        choices = rev(unique(i.nput$year[i.nput$dataset==input$d.ataset])),
-        selected = rev(unique(i.nput$year[i.nput$dataset==input$d.ataset]))[1],
+        #choices = rev(unique(i.nput$year[i.nput$dataset==input$d.ataset])),
+        choices = rev(seq(unique(i.nput$year[i.nput$dataset==input$d.ataset])[1],as.numeric(format(Sys.Date(), "%Y")),by=1)),
+        selected = rev(seq(unique(i.nput$year[i.nput$dataset==input$d.ataset])[1],as.numeric(format(Sys.Date(), "%Y")),by=1))[1],
         choicesOpt = NULL,
         options = NULL,
         clearOptions = FALSE
       )
-   #  }else{
-   #    updatePickerInput(
-   #      session = session,
-   #      inputId = "y.ears",
-   #      label = "Select dataset",
-   #      choices = rev(unique(i.nput$year[i.nput$dataset==input$d.ataset])),
-   #      selected = rev(unique(i.nput$year[i.nput$dataset==input$d.ataset]))[1],
-   #      choicesOpt = NULL,
-   #      options = NULL,
-   #      clearOptions = FALSE
-   #    )
-   # }
-    if(input$d.ataset%in%c("SaSnow2012","SaSoil2002")){
+     if(input$d.ataset%in%c("SaSnow2012","SaSoil2002")){
       if (!is.null(n.ote1))
         return()
       n.ote1 <<- showNotification(
@@ -250,7 +236,7 @@ server <- function(input, output, session) {
     n<-length(input$y.ears)
     #browser()
     if(n>=1){    
-      v<-ncol(read.table(paste0(p.1$w[p.1$n == "LV0.p"],input$d.ataset,"/00_full_dataset/",input$d.ataset,"_",rev(input$y.ears)[1],"_lv0.dat"),sep = ",", dec = ".", header = T))
+      v<-ncol(read.table(paste0(p.1$w[p.1$n == "LV0.p"],input$d.ataset,"/00_full_dataset/",input$d.ataset,"_",unique(i.nput$year[i.nput$dataset==input$d.ataset])[1],"_lv0.dat"),sep = ",", dec = ".", header = T))
     }else{v<-0}
     
     apr.time <- n*v*l.0 + n*v*l.1 + n*v*l.w + n*v*l.ov + n*v*l.o2a
@@ -407,8 +393,10 @@ server <- function(input, output, session) {
           if(input$d.ataset %in% c("BaHole2009", "BaHole2015", "BaMet2009","BaSnow2013", "BaSoil2009", "BaSoil2017", 
                                    "TVCSoil2016",
                                    "SaMet2002","SaSnow2012","SaSoil2002") ){
-            station <<- input$d.ataset 
+            station  <<- input$d.ataset 
             run.year <<-  as.numeric(j)  #
+            location <<-  input$s.tation
+            browser()
             try(source(paste0(p.1$w[p.1$n == "script.p"], "required-scripts-and-files/additionals/OverviewPlots_test.R")))
             m <- m + 1
             update_modal_progress(value=(((0.1*m)/(length(input$y.ears)*length(input$Id001))*10)),
